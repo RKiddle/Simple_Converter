@@ -1,8 +1,71 @@
 #!/usr/bin/bash
+set -euo pipefail
+
+re_def="^[a-z]+_to_[a-z]+$"
+re_num="^-?(0|[1-9][0-9]*)(\.[0-9]+)?$"
+re_dig="^[0-9]+$"
+
+
+file_name="definitions.txt"
+
+
+           
+add_definition() {
+  echo "Enter a definition:"
+  read -a user_input
+  arr_length="${#user_input[@]}"
+  if [ "$arr_length" -eq "2" ]; then
+    definition="${user_input[0]}"
+    constant="${user_input[1]}"
+  fi
+
+  while ! { [ "$arr_length" -eq "2" ] \
+      && [[ "$definition" =~ $re_def ]] \
+      && [[ "$constant" =~ $re_num ]]; }; do
+    printf "The definition is incorrect!\nEnter a definition:"
+    read -a user_input
+    arr_length="${#user_input[@]}"
+    if [ "$arr_length" -eq "2" ]; then
+      definition="${user_input[0]}"
+      constant="${user_input[1]}"
+    fi
+  done
+
+  echo "$definition $constant" >> "$file_name"
+}
+
+delete_definition() {
+  if ! [[ -f "$file_name" ]]; then
+    echo "Please add a definition first!"
+    return
+  fi
+  
+  n_lines=0
+  echo "Type the line number to delete or '0' to return"
+  while IFS= read -r line
+  do
+    ((n_lines=n_lines+1))
+    echo "$n_lines. $line"
+  done < "$file_name"
+
+  read line_number
+  while ! [[ "$line_number" =~ $re_dig ]] \
+      || ! { [[ "$line_number" -ge "0" ]] && [[ "$line_number" -le "$n_lines" ]]; }; do
+    echo "Enter a valid line number!"
+    read line_number
+  done
+
+  if [[ "$line_number" == '0' ]]; then
+    return
+  else
+    sed -i "${line_number}d" "$file_name"
+  fi
+}
+
 
 echo "Welcome to the Simple converter!"
 
-touch definitions.txt
+
 
 while true;
     do
@@ -23,38 +86,15 @@ while true;
                 echo "Not implemented!"
                 ;;
             2)  
-                while true;
-                    do
-                        echo "Enter a definition:"
-        
-                        read -a user_input
-                        arr_length="${#user_input[@]}"
-                        definition="${user_input[0]}"
-                        constant="${user_input[1]}"
-                        constant_2="${user_input[2]}"
-                        
-                        re="^[a-z]+_to_[a-z]+$"
-                        
-                        red="^[+-]?[0-9]+\.?[0-9]*$"
-                        
-                        
-                        if [[ "$definition" =~ $re ]] && [[ "$constant" =~ $red ]] && [[  -z "$constant_2" ]]; then
-                            echo "($user_input)" >> definitions.txt
-                            break
-                        else
-                            echo "The definition is incorrect!"
-                            
-                        fi
-                    done
+                add_definition
 
                                 ;;
             3)
-                echo "Type the line number to delete or '0' to return"
-                cat definitions.txt
-                echo "Please add a definition first!"
+                delete_definition
                                 ;;
             *) 
                 echo "Invalid option!"
             esac
-    done                       
-           
+    done      
+
+
